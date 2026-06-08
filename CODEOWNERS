@@ -1,0 +1,11 @@
+# CODEOWNERS - LunarAST Protocol Family Governance
+# Documented at: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Ecosystem Constitution (Mother Specification)
+/docs/ecosystem-whitepaper-v1.0.md @LunarAST/spec-core
+
+# Global Governance Files
+CONTRIBUTING.md @LunarAST/spec-core
+CODE_OF_CONDUCT.md @LunarAST/spec-core
+SECURITY.md @LunarAST/spec-core
+CODEOWNERS @LunarAST/spec-core
