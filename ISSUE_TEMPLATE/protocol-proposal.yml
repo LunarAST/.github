@@ -1,0 +1,73 @@
+name: Protocol Proposal
+description: Propose a new sub-protocol, specification change, or RFC
+title: "[Proposal]: "
+labels: ["proposal", "rfc"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing a change to the LunarAST protocol family. Please provide a detailed proposal following the template below.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Proposal Type
+      description: What type of proposal is this?
+      options:
+        - New Sub-Protocol (e.g., EventAST, SchemaAST)
+        - Specification Amendment (existing protocol)
+        - Adapter Standard Change
+        - Governance or Process Change
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Proposal Title
+      description: A concise title for your proposal.
+      placeholder: "e.g., EventAST: Asynchronous Event Contract Specification"
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this proposal needed? What problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: specification
+    attributes:
+      label: Proposed Specification
+      description: The detailed specification or amendment text. Include JSON schemas where applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: alignment
+    attributes:
+      label: Alignment with Mother Specification
+      description: How does this proposal align with the LunarAST ecosystem mother specification (v1.5)? Reference specific sections.
+    validations:
+      required: true
+  - type: textarea
+    id: breaking
+    attributes:
+      label: Backward Compatibility Impact
+      description: Does this proposal introduce breaking changes? If so, describe the migration path.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What alternative approaches were considered? Why was this approach chosen?
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have read the [Contributing Guidelines](../CONTRIBUTING.md)
+          required: true
+        - label: I have searched existing proposals to avoid duplication
+          required: true
+        - label: This proposal follows the Google JSON Style Guide (camelCase)
+          required: true
