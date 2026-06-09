@@ -126,6 +126,7 @@ To guarantee developers' 100% control over code, the `lunar` command-line tool r
 *   **`lunar init`**: **Only when detecting that local `.lunar/interfaces.yml` does not exist**, automatically runs physical scanning and creates a draft file. If the file already exists, this command is directly ineffective and does not overwrite any human traces.
 *   **`lunar diff`**: Executes comparison between physical facts (AST) and the intent overlay (`interfaces.yml`), outputting a standard Git-diff style change report to the console.
 *   **`lunar sync --apply`**: A user-triggered sync merge command, supporting `--dry-run` to preview changes. Before executing the actual merge write, forcibly backs up the old `interfaces.yml` to the local hidden backup directory `.lunar/.backup/interfaces.yml.bak` (this path is automatically written to the project's `.gitignore` by `lunar init`).
+*   **AI Suggestion Patch Mechanism**: The `.lunar/suggestions/` directory stores intent overlay suggestion patches created by humans or AI (in YAML format). When merging updates into `interfaces.yml`, `lunar sync --apply` automatically detects and processes patch files inside this directory, then moves processed files into the `merged/` subdirectory.
 
 ---
 
