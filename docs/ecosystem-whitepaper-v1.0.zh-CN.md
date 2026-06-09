@@ -122,6 +122,7 @@
 *   **`lunar init`**：**仅当检测到本地 `.lunar/interfaces.yml` 不存在时**，自动运行物理扫描，创建底稿文件。若文件已存在，此命令直接无效，不覆盖任何人工痕迹。
 *   **`lunar diff`**：执行物理事实（AST）与意图覆盖层（`interfaces.yml`）的比对，在控制台输出标准的 Git-diff 风格变更报告。
 *   **`lunar sync --apply`**：用户主动触发的同步合并命令，支持 `--dry-run` 预览更改。在执行实际合并写入前，强制对旧的 `interfaces.yml` 进行备份并写入本地隐藏备份目录 `.lunar/.backup/interfaces.yml.bak`（此路径自动由 `lunar init` 写入项目的 `.gitignore` 中）。
+*   **AI 建议补丁机制**：`.lunar/suggestions/` 目录用于存放人类或 AI 生成的意图覆盖建议补丁（YAML 格式）。`lunar sync --apply` 在合并 `interfaces.yml` 时会自动检测并处理此目录下的补丁文件，处理后移入 `merged/` 子目录。
 
 ---
 
