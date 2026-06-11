@@ -1,67 +1,60 @@
-# LunarAST Protocol Family Unified Ecosystem White Paper
-
-**——Multi-Layer Heterogeneous Static Contract Standard & "Birth, Transmission, Labeling, Exhibition" Four-Layer Architecture Specification**
-
-**Version**: 1.0 — Official Release
-**Last Updated**: 2026-06-08
-**Scope**: Interface-level static contract verification for multi-language/multi-repository microservice ecosystems, CI pipeline gating, architectural drift pre-verification, and AI agent zero-knowledge addressing
-**Normative Constraints**: Full compliance with Google Naming & JSON Style Guide (`camelCase` naming convention)
+# LunarAST & lunar-gateway Protocol and System Architecture Specification
+## — Multi-layer Heterogeneous Static Contract Standard & Four-tier Architecture: Capture, Transmit, Tag, Present
+**Version**: 1.6 — Specification Redesign & Full Logical Closure Release
+**Last Updated**: 2026-06-12
 
 ---
 
-## Part I: LunarAST Ecosystem Mother Specification
+## 1. Physical Role Definitions
+This specification defines the physical boundaries and naming conventions for all components within the LunarAST ecosystem.
 
-### 1. Physical Role Definitions
-
-This specification defines the physical boundaries and naming contracts of each component in the LunarAST ecosystem:
-
-| Component/Naming | Physical Layer | Core Responsibility |
+| Component / Name | Physical Tier | Core Responsibilities |
 |:---|:---|:---|
-| **LunarAST** | **Standard Specification Layer** | Defines the Base IR specification, extraction protocol, and mathematical comparison algorithm semantics for multi-layer contracts (RouteAST, EventAST, etc.). It is the underlying static contract standard, existing as a static Schema specification and containing no executable code. |
-| **`lunar`** | **Data Generation Layer** | Command-line executable binary for local and CI pipelines. Responsible for `lunar init` (initialize draft), `lunar scan` (physical extraction), `lunar diff` (non-privileged comparison), and `lunar sync --apply` (active backup and secure synchronization). Alignment decisions and merge logic are executed entirely here. |
-| **`lunar-gateway`** | **Stateless Distribution Layer** | Independently deployed Serverless edge gateway program. Compiled to `wasm32-wasip2`, performs one-way authentication based on security tokens (Ed25519-JWT) and high-concurrency dual-phase isolated cache distribution. The gateway does not run any real-time interface alignment comparison logic. |
-| **`lunar-scope`** | **Visualization Presentation Layer** | Purely static front-end multi-layer relationship canvas. Pulls topology JSON already aligned during the build phase from the gateway via standard APIs, rendering a front-end human-machine interface with magnetic prediction dashed lines, breakpoint highlighting, and architectural drift warnings in the browser. |
+| **LunarAST** | **Standard Specification Layer** | Defines the base IR specifications, extraction protocols and mathematical comparison semantics for multi-layer contracts (RouteAST, EventAST, etc.). As the underlying static schema standard, it contains no executable code itself. |
+| **`lunar`** | **Data Generation Layer** | Native command-line binary for local workstations and CI pipelines. Implements `lunar init` (initialize templates), `lunar scan` (physical extraction), `lunar diff` (read-only comparison) and `lunar sync --apply` (backup & secure synchronization). All alignment decision and merge logic runs here. |
+| **`lunar-serve`** | **Local Read-only Distribution Layer** | Lightweight local HTTP binary for read-only access. Depends on `lunar-interface`. Renders high-fidelity `lunar-map.json` for development use, and provides on-demand, archive-free direct access to local workspace source code for AI Agents via built-in fallback mechanisms with zero manual configuration. |
+| **`lunar-gateway`** | **Stateless Distribution Layer** | Independently deployed Serverless edge gateway. Compiles to `wasm32-wasip2` [4]. Implements one-way authentication based on Ed25519-JWT tokens and high-concurrency dual-isolation cache distribution [2]. No real-time interface alignment or comparison logic is executed on the gateway. |
+| **`lunar-scope`** | **Visualization Presentation Layer** | Pure static frontend multi-relational canvas. Pulls pre-aligned topological JSON from the gateway via standard APIs, and renders an interactive UI with magnetic prediction dashed lines, breakpoint highlighting and architecture drift warnings in browsers. |
 
-#### 1.1 Metaphorical Positioning and Physical Correspondence
-*   **Data Reflection (LunarAST Standard Layer)**: The system itself does not generate runtime data (does not emit light), and does not participate in any runtime monitoring or performance overhead. It receives physical facts from source code changes during the build phase (the terrain illuminated by developer commits and compilation actions) and statically projects them.
-*   **Ecosystem Presentation (lunar-scope Presentation Layer)**: As a purely static front-end multi-layer relationship canvas. It provides architects with multi-angle low-latency observation of contract data, capturing dangling breakpoints and unplanned wild dependencies before code deployment.
+### 1.1 Metaphor Mapping & Physical Correspondence
+*   **Data Reflection (LunarAST Standard Layer)**: The system generates no runtime data (no active monitoring) and introduces zero performance overhead at runtime. It captures physical facts from source code changes triggered by developer commits and compilation, then projects them as static artifacts.
+*   **Ecosystem Presentation (lunar-scope Presentation Layer)**: A pure static multi-layer relational canvas. It delivers low-latency observation of contract data for architects, and detects orphaned breakpoints and unintended ad-hoc dependencies before code deployment [2].
 
 ---
 
-### 2. Three-Tier Progressive Source of Truth Architecture
-
+## 2. Three-tier Progressive Source of Truth Architecture
 ```
       ┌────────────────────────────────────────────────────────┐
-      │   Tier 1: Physical Facts (AST)                         │  ← 80-90% auto-derived, written to .interfaces-autogen.json
+      │   Tier 1: Physical Facts (AST)                           │  ← 80-90% auto-generated, stored in .interfaces-autogen.json
       ├────────────────────────────────────────────────────────┤
-      │   Tier 2: Intent & Override Overlay                    │  ← Human-controlled, .lunar/interfaces.yml (primary gate)
+      │   Tier 2: Intent & Override Overlay                      │  ← Human-controlled, stored in .lunar/interfaces.yml (primary governance layer)
       ├────────────────────────────────────────────────────────┤
-      │   Tier 3: Escape Hatch (Comments)                      │  ← Only for extremely complex dynamic RPC edge calls
+      │   Tier 3: Escape Hatch (Inline Comments)                 │  ← Reserved only for extreme edge cases of dynamic RPC calls
       └────────────────────────────────────────────────────────┘
 ```
 
-#### 2.1 Tier 1: Physical Facts — Automatic Derivation
-*   **Physical File**: **`.lunar/.interfaces-autogen.json`** (This file must be added to the project's `.gitignore`).
-*   **Physical Fact Lifecycle**: Since this file does not enter the Git repository, during CI/CD or local compilation phases, the build machine automatically runs `lunar scan` locally to reconstruct this physical fact cache file, without depending on historical version caches.
+### 2.1 Tier 1: Physical Facts — Auto-Generated Data
+*   **Physical File**: **`.lunar/.interfaces-autogen.json`** (This file **must** be added to the project `.gitignore`).
+*   **Lifecycle of Physical Facts**: Since this file is excluded from Git, CI/CD pipelines or local compilation will automatically execute `lunar scan` to rebuild the physical fact cache. No historical cache dependencies are required.
 
-#### 2.2 Tier 2: Intent & Override Overlay — Field-Level Partial Override and Merge Contract
-*   **Physical File**: **`.lunar/interfaces.yml`** in the project root directory.
-*   **Properties**: **100% controlled by humans, under version control (Git), tools strictly prohibited from any unauthorized silent modifications**.
-*   **Merge Formula ($\oplus$) Field-Level Partial Override Definition**:
-    For an interface object located by the same composite primary key `(Path, Method)`, the alignment engine executes the **"Field-Level Partial Override"** rule during compilation:
-    *   Let $A$ be an interface object in the physical facts (Actual AST), and $I$ be the interface definition with the same name in the intent overlay.
-    *   For any property field $f$ of the interface object (such as `port`, `rawConstraint`, etc.):
+### 2.2 Tier 2: Intent & Override Overlay — Partial Field Override & Merge Rules
+*   **Physical File**: **`.lunar/interfaces.yml`** located in the project root directory.
+*   **Attributes**: Fully human-managed, tracked by Git. Toolchains are strictly prohibited from making silent unauthorized modifications.
+*   **Merge Operator ($\oplus$) & Partial Field Override Definition**:
+    For an interface object uniquely identified by the composite primary key `(Path, Method)`, the alignment engine enforces **partial field override** rules during compilation:
+    *   Let $A$ = an interface object from Physical Facts (raw AST), $I$ = the corresponding interface definition from the Intent Overlay.
+    *   For any field $f$ of the interface object (e.g. `port`, `rawConstraint`):
         $$\text{Resolved}.f = \begin{cases} 
           I.f, & \text{if } I.f \text{ is specified} \\
           A.f, & \text{otherwise} 
         \end{cases}$$
-    *   This rule ensures that when manually overriding specific network parameters or path properties, **other silent metadata in the physical facts** (such as source code physical landmarks `sourceFile`, `lineNumber`, etc.) is preserved as-is.
-    *   **Override Boundary Limitation**: For array types (such as `segments`) and nested objects, the overlay **only supports Complete Replacement**, not partial field merging. If both the intent overlay and physical facts are non-empty on such a field and differ in length or sub-keys, `lunar diff` must alert and refuse to execute automatic merge (even in non-strict mode), forcing manual complete rewrite of that array.
-    *   **Conflict Detection**: If the overlay changes a core property already present in the physical facts, `lunar diff` must output a highlighted warning log to the terminal for human review, but the toolchain does not block compilation in non-strict mode.
+    *   This rule ensures that when humans override specific network parameters or path attributes, **all other implicit metadata from Physical Facts (e.g. source file paths `sourceFile`, line numbers `lineNumber`) are preserved intact** [2].
+    *   **Override Boundary Restriction**: For array-type fields (e.g. `segments`) and nested objects, the overlay only supports **full replacement**, not partial field merging. If both the overlay and physical facts contain non-empty values with mismatched lengths or child keys, `lunar diff` must throw an error and reject automatic merging (even in non-strict mode), forcing manual full rewrite of the array content.
+    *   **Conflict Detection**: If the overlay modifies core properties from physical facts, `lunar diff` outputs highlighted warning logs to the terminal for human review. Compilation will not be blocked in non-strict mode.
 
-#### 2.3 Tier 3: Escape Hatch
-*   **Definition**: Single-line magic comments starting with `// lunar:` or `# lunar:` above source code lines.
-*   **Applicable Boundary**: **Only for dynamically assembled RPC/HTTP calls where the target path and method cannot be captured by static AST analysis due to dynamic evaluation. For standard routes, the adapter forcibly extracts physical facts; duplicate declaration via comments is prohibited.**
+### 2.3 Tier 3: Escape Hatch
+*   **Definition**: Single-line inline directives starting with `// lunar:` or `# lunar:` above source code lines [2].
+*   **Usage Boundary**: **Reserved exclusively for dynamically assembled RPC/HTTP calls, where target paths and methods cannot be captured by static AST analysis due to runtime dynamic evaluation. For standard routes, adapters must extract physical facts; duplicate declarations via comments are forbidden.**
 *   **Syntax Example**:
     ```typescript
     // lunar:consume POST https://api.auth-service/v1/token
@@ -70,134 +63,170 @@ This specification defines the physical boundaries and naming contracts of each 
 
 ---
 
-### 3. Four-Layer Decoupled Physical Blueprint and Topology Generation
+## 3. Four-tier Decoupled Architecture & Topology Generation
+To guarantee maximum robustness of the core system, LunarAST splits complex distributed dependencies into four independent, physically isolated subdomain contracts to eliminate protocol bloat [5]:
 
-To maintain the absolute robustness of the system kernel, `LunarAST` divides complex distributed dependencies into four mutually independent, physically isolated sub-domain contracts, completely preventing protocol bloat:
+1.  **`RouteAST` (Routing & Network Contract)**: Manages synchronous network interfaces (REST/gRPC/Nginx). Metadata includes `method`, `segments`, `port`. **Current status: v0.5.0 draft specification**.
+2.  **`EventAST` (Event & Asynchronous Contract)**: Manages asynchronous event publish/subscribe and request-response patterns. Metadata includes `brokerType` (e.g. Kafka/NATS/RabbitMQ), `action` (enum: `publish` / `subscribe` / `request` / `reply`), `topic`, `payloadSchemaHash`. **Specification in planning**.
+3.  **`SchemaAST` (Storage & Data Contract)**: Manages underlying database tables, object storage buckets and cache dependencies, used to detect hidden and critical implicit database coupling between microservices. Metadata includes `storageType` (e.g. PostgreSQL/MongoDB/S3/Redis), `database` (bucket/DB name), `table` (table name / key pattern), `operation` (enum: `read` / `write` / `join`). **Specification in planning**.
+4.  **`TypeAST` (Code & Library Contract)**: Manages compile-time code reuse and strongly bound library dependencies. Metadata includes `libraryName` (shared package name), `typeIdentifier` (DTO / public structure), `interfaceDefinitionFile` (e.g. `.proto` / gRPC stub path), `versionConstraint`. **Specification in planning**.
 
-1.  **`RouteAST` (Routing & Network Contract)**: Focuses on synchronous network interfaces (REST/gRPC/Nginx). Metadata includes `method`, `segments`, `port`. **Sub-protocol published (see Part II)**.
-2.  **`EventAST` (Event & Asynchronous Contract)**: Focuses on asynchronous decoupled event publish/subscribe and request-reply patterns. Metadata includes `brokerType` (e.g., Kafka/NATS/RabbitMQ), `action` (values: `publish` / `subscribe` / `request` / `reply`), `topic`, `payloadSchemaHash`. **Specification planned**.
-3.  **`SchemaAST` (Storage & Data Contract)**: Focuses on underlying database tables, object storage buckets, and cache dependencies, used to discover the hidden and fatal "database implicit coupling" in microservices. Metadata includes `storageType` (e.g., PostgreSQL/MongoDB/S3/Redis), `database` (database name/bucket name), `table` (table name/key matching pattern), `operation` (values: `read` / `write` / `join`). **Specification planned**.
-4.  **`TypeAST` (Code & Library Contract)**: Focuses on compile-time code reuse and strongly bound interface dependencies. Metadata includes `libraryName` (shared package name), `typeIdentifier` (data DTO or common algorithm formula struct), `interfaceDefinitionFile` (e.g., `.proto` / gRPC Stubs path), `versionConstraint`. **Specification planned**.
-
-#### 3.1 Multi-Repository Ecosystem Topology Generation Process (Static Confluence & Generation Sync Mechanism)
+### 3.1 Multi-repo Ecosystem Topology Generation (Static Merging & Generation Synchronization)
 *   **Single Repository (CI Phase)**:
-    A single repository executes `lunar scan` during the build phase, extracts the project's `<subdomain>-actual.json` and uploads it to S3/R2. The `<subdomain>` naming convention is defined by each sub-protocol; for RouteAST, it is `route-ast` (producing the file `route-ast-actual.json`).
-    *   **Pointer Update Mechanism**: After successfully uploading `<subdomain>-actual.json`, the single repository CI **must immediately update and upload its corresponding repository's pointer file `pointers/latest.json`**, making its `sha` point to the Commit SHA of this submission, thus ensuring the ecosystem orchestration tool can capture the latest available physical version in real-time.
-*   **Generation Build Triggering and Atomicity Guarantee (Generation Sync)**:
-    To guarantee that a single ecosystem-level build corresponds to a deterministic, atomic, and legitimate global static snapshot during multi-service asynchronous CI builds, the system adopts the **"Ecosystem Build Plan Lockfile"** synchronization mechanism:
-    1.  **Plan Generation**: The ecosystem administrator or ecosystem-level automated release tool periodically or based on Commit events polls each project's `latest.json` pointer, generates a target SHA static snapshot file **`ecosystem-plan.json`**, and simultaneously generates a unique `generationId` based on the timestamp and content hash at the time of plan file creation (format: `<timestamp>-<uuid>`).
-    2.  **Plan Publishing**: This plan file is uploaded to `ecosystem-config/generations/<generationId>/ecosystem-plan.json`.
-    3.  **Central Pipeline Activation**: The upload event of this plan file directly serves as a static signal, unidirectionally triggering the centralized alignment build pipeline, eliminating the "chicken-and-egg" deadlock.
-*   **Core Alignment and Verification Boundaries**:
-    1.  **Input Compliance Verification (Set Equality)**: **Upon startup, the central pipeline forcibly verifies that the set of all projects defined in `ecosystem-plan.json` must be exactly equal (Set Equality) to the set of projects declared in the ecosystem registration manifest `repos.json`.** If the plan lacks any registered project or contains unregistered projects, the central pipeline must refuse execution, throw an error, and exit, forcing regeneration of a complete lockfile, ensuring every generation snapshot is a complete projection of the entire ecosystem, preventing large-scale false alignment anomalies caused by missing partial snapshots.
-    2.  **Build Idempotency Guarantee**: The pipeline first checks if `ecosystem-config/generations/<generationId>/lunar-map.json` already exists. If it exists, the generation alignment is deemed statically ready, and computation is skipped.
-    3.  **Generation Fetch and Isolation Determination**: The pipeline fetches all projects' `actual.json` caches in parallel:
-        *   If target `actual.json` for all declared projects is ready: the central pipeline aligns the data and generates the global `lunar-map.json`.
-        *   **`failed` Status Determination**: For projects that fail to upload `actual.json` within a 5-minute timeout window, mark their `scanStatus: failed` in `lunar-map.json` and forcibly set their `interfaces` field to `null`.
-        *   **`stale` Status and Data Adoption Determination**: When a project's `actual.json` cache has been purged by lifecycle, or the difference between its `lastUpdated` timestamp and the current generation compilation time exceeds a preset validity period (default 7 days, controlled by `LUNAR_MAX_STALE_AGE_SECONDS`): **The central pipeline will still adopt its historical data for alignment comparison. However, its `scanStatus` is marked as `stale`, and the final status of all alignment entries generated by this project are forcibly marked as `Unverified`.**
-    4.  **Ecosystem-Level Top-Level Pointer Update**: After successfully uploading the alignment results `lunar-map.json` and `meta.json`, the central pipeline **must synchronously and atomically update the ecosystem latest generation pointer located at `ecosystem-config/latest-generation.json`**, pointing its `generationId` and `lastUpdated` to the latest completed generation, enabling downstream clients to achieve stateless dynamic version discovery.
-*   **Reverse Derivation Mechanism and Null Value Defense**:
-    If the `<subdomain>-actual.json` cache is physically missing from the storage bucket due to network issues or lifecycle expiration, the gateway will forcibly perform data reverse derivation from `projects[].interfaces` in `lunar-map.json`.
-    *   **Null Value Exception Defense**: If the corresponding project's `interfaces` has been set to `null` during the build phase due to failure isolation, the gateway determines that the reverse derivation data source for this project is physically unavailable. The gateway immediately interrupts distribution, returns `410 Gone` to the client with an `X-Lunar-Recovery` header guiding rebuild, and carries the `ERR_LUNAR_INTERFACE_DATA_MISSING` error code in the response body.
-    *   **Honest Disclosure on Build Failure Isolation and Actual File Existence Inconsistency**: After the central pipeline marks a timed-out, not-ready project as `scanStatus: failed` and `interfaces: null`, that project's CI container might complete the individual upload of `actual.json` at a later moment. At this point, the file physically exists in the storage bucket, but the global topology considers it unavailable due to build isolation. When a client bypasses the topology and directly accesses the project's interface via `GET /commits/<sha>/route-ast-actual.json`, the gateway will return success. Such inconsistency is caused by the failure isolation boundary of distributed compilation; developers must use `lunar doctor` for global state consistency diagnosis.
+    Each repository runs `lunar scan` during build to extract `<subdomain>-actual.json` (e.g. `route-ast-actual.json`) and upload it to S3/R2 [2].
+    *   **Pointer Update Mechanism**: After successful upload of `<subdomain>-actual.json`, the single-repo CI pipeline **must immediately update and upload the repository pointer file `pointers/latest.json`**, where the `sha` field points to the current commit SHA. This ensures ecosystem orchestrators can capture the latest valid physical version in real time.
+*   **Generation Build Trigger & Atomicity Guarantee**:
+    To ensure one ecosystem-wide build maps to a single atomic, valid global static snapshot during asynchronous CI execution across multiple services, the system adopts an **Ecosystem Lockfile** synchronization mechanism:
+    1.  **Plan Generation**: Ecosystem administrators or ecosystem automation tools periodically poll the `latest.json` pointers of all projects to generate a static snapshot file named **`ecosystem-plan.json`**. A unique `generationId` is assigned to each generation (format: `<timestamp>-<uuid>`), generated by the ecosystem publisher based on timestamp and content hash upon file creation.
+    2.  **Plan Publication**: The lockfile is uploaded to `ecosystem-config/generations/<generationId>/ecosystem-plan.json`.
+    3.  **Central Pipeline Activation**: The upload event of the lockfile acts as a static trigger to activate the centralized alignment pipeline, eliminating circular dependency deadlocks [2].
+*   **Core Alignment & Validation Rules**:
+    1.  **Input Validation (Set Equality Check)**: **On startup, the central pipeline enforces strict set equality: the full project set defined in `ecosystem-plan.json` must exactly match the registered project set in `repos.json`.** If any registered project is missing or unregistered projects are included, the pipeline terminates with an error and refuses execution. This guarantees every generation snapshot is a complete projection of the entire ecosystem and prevents false alignment caused by partial snapshots.
+    2.  **Idempotency Guarantee**: The pipeline first checks if `ecosystem-config/generations/<generationId>/lunar-map.json` already exists. If so, the generation is marked ready and computation is skipped directly.
+    3.  **Generation Fetch & Status Classification**: The pipeline fetches `actual.json` caches of all projects in parallel:
+        *   **All artifacts ready**: The pipeline aligns data and generates the global `lunar-map.json`.
+        *   **`failed` Status**: For projects whose `actual.json` is not uploaded within the 5-minute timeout window, mark their `scanStatus: failed` in `lunar-map.json` and set the `interfaces` field to `null` forcibly [2].
+        *   **`stale` Status**: If historical `actual.json` artifacts exist for a project, but the time difference between its `lastUpdated` timestamp and the current generation build time exceeds the predefined retention period (default: 7 days, controlled by `LUNAR_MAX_STALE_AGE_SECONDS`): The pipeline uses the historical data for alignment, marks `scanStatus: stale`, and forces all alignment entries generated from this project to `unverified` [2].
+    4.  **Global Ecosystem Pointer Update**: After uploading the aligned `lunar-map.json` and `meta.json`, the central pipeline **atomically updates the global top-level pointer `ecosystem-config/latest-generation.json`**, setting its `generationId` and `lastUpdated` to the newly completed generation for stateless clients to discover the latest version dynamically.
+*   **Reverse Lookup & Null Safety Mechanism**:
+    If `<subdomain>-actual.json` is physically missing from the storage bucket due to network issues or expiration, the gateway performs reverse lookup using `projects[].interfaces` inside `lunar-map.json`.
+    *   **Null Exception Handling**: If a project’s `interfaces` is set to `null` due to build failure isolation, the gateway determines the source data is unavailable. It terminates the request, returns `410 Gone` with the `X-Lunar-Recovery` response header for rebuild guidance, and includes the error code `ERR_LUNAR_INTERFACE_DATA_MISSING` in the response body.
+    *   **Failure Isolation & Consistency Disclosure**: After the central pipeline marks a project as `scanStatus: failed` and `interfaces: null`, the project’s standalone CI may still upload `actual.json` later. In this case, the file exists physically in storage but is treated as unavailable by the global topology due to build isolation rules. If clients bypass the topology and directly access the artifact via `GET /commits/<sha>/route-ast-actual.json`, the request will succeed. Such inconsistencies are inherent to distributed build isolation; developers must use `lunar doctor` to diagnose global state consistency.
+
+### 3.2 Zero-Friction Source Code Projection & Fallback Routing Specification
+To enable AI Agents to access source code on-demand without archiving overhead, the system implements URL projection and path fallback mechanisms:
+
+1.  **Route Alias Normalization**:
+    When serving GitHub-style file access, the gateway and local read-only service treat `/blob/` (web file view) and `/raw/` (raw text access) as fully equivalent routes. AI clients can replace `github.com` with the ecosystem domain to retrieve raw file content without adjusting URL syntax [1.2].
+2.  **Two-tier Base Path Fallback Priority**:
+    When resolving a project’s physical workspace path, the service enforces the following fallback chain. Hardcoded global paths are strictly prohibited:
+    $$\text{ResolvedPath} = \begin{cases} 
+      \text{Registry.path}, & \text{if defined in repos.json} \\
+      \text{Topology.path}, & \text{else if auto-discovered in lunar-map.json} \\
+      \text{Error (400)}, & \text{otherwise} 
+    \end{cases}$$
+3.  **Case-Insensitive Normalization**:
+    When matching GitHub-style coordinates `{owner}/{repo}/{branch}`, the gateway and service layer convert all paths to lowercase for hash mapping in memory, eliminating routing failures caused by cross-platform case sensitivity differences [1.2].
 
 ---
 
-### 4. Data Generation Layer and Compilation Pipeline (lunar)
+## 4. Data Generation Layer & Compilation Pipeline (`lunar`)
 
-#### 4.1 Phase One: Detect & Extract — Process Isolation, Adapter Path Override, and Atomicity Guarantee
-*   **Adapter Discovery and Override Mechanism**:
-    The `lunar` control layer defaults to dynamically searching for executables matching the name `lunar-extract-<lang>` (e.g., `lunar-extract-rust`, `lunar-extract-node`) via the system environment variable `PATH`. Users can specify absolute paths for `adapters` in `.lunar/config.yml` for override, which takes priority over `PATH` auto-discovery.
-*   **Line-Delimited JSON Communication and Atomic End Marker**:
-    The Orchestrator spawns adapter subprocesses. To defend against heap overflows in large projects, adapters must use streaming output (Line-by-line Flushing). Upon extracting each route, the adapter must immediately write it to `stdout` and execute `flush`, strictly forbidden from accumulating the entire dataset in memory before full serialization.
-    *   **Output Stream Atomicity and Count Verification (End-of-Stream Marker)**: To prevent the control layer from receiving an incomplete, corrupted interface list due to an adapter mid-execution crash, **the adapter must output a special end marker line after successfully extracting all routes**:
+### 4.1 Phase 1: Detect & Extract — Process Isolation, Adapter Override & Atomicity Guarantee
+*   **Adapter Discovery & Override Mechanism**:
+    The `lunar` controller dynamically scans the system `PATH` for binaries named `lunar-extract-<lang>`. Users can explicitly define `adapters` paths in `.lunar/config.yml` for absolute path override, which takes higher priority over automatic `PATH` discovery.
+*   **JSON Lines Streaming & End-of-Stream Atomic Marker**:
+    The orchestrator spawns adapter child processes. To prevent heap overflow for large projects, adapters must adopt line-by-line streaming output with immediate flushing [3]. Each extracted route is written to `stdout` and flushed instantly; in-memory full-data accumulation and one-time serialization are forbidden [3].
+    *   **Stream Integrity & Count Validation**: To avoid corrupted partial data caused by adapter crashes, **adapters must output a dedicated end marker line after all routes are successfully extracted**:
         `{"_lunar": {"status": "success", "count": 42}}`
-        **Upon receiving this marker line, the Orchestrator must rigorously verify that the actual number of parsed routes equals `count`. If they do not match (automatically defending against data phase truncation), the Orchestrator discards all lines and directly triggers `ERR_LUNAR_ADAPTER_CRASH`.** All debug and warning logs must be redirected to `stderr`, strictly forbidden from polluting `stdout`.
-*   **Adapter Error Isolation Strategy**:
-    If a specific framework's adapter crashes and returns a non-zero exit code, the Orchestrator must gracefully capture it, isolate and skip that project's scan, log a warning, and continue execution without ever causing a main CI process interruption.
+        After receiving this marker, the orchestrator **strictly verifies whether the total parsed route count matches the `count` value**. If mismatched (indicating truncated data), the orchestrator discards all output and throws `ERR_LUNAR_ADAPTER_CRASH`. All debug and warning logs are redirected to `stderr` and must not pollute `stdout` [1.2.1].
+*   **Adapter Failure Isolation**:
+    If an adapter for a specific framework exits with a non-zero code (crash), the orchestrator catches the error gracefully, skips scanning for the current project, logs a warning, and continues execution. The main CI process will not be interrupted.
 
-#### 4.2 Phase Two: Confirm & Semantic Normalization — Constraint Passing Principle
-*   **Semantic Normalization**: Forcefully translate and normalize framework-specific regex and constraint expressions output by different adapters into the standard Rust memory model `RouteAST`.
-*   **Constraint Preservation Compromise and Limitation**:
-    Performing mathematical equivalence proofs on various irregular regex expressions across languages in the static dimension is not realistically feasible in engineering. At the v0.5.0 stage, the confirmation engine **does not forcibly translate constraint regexes**. `rawConstraint` is preserved as-is and passed as descriptive metadata; the matching algorithm only performs positional and basic type comparison during the alignment phase. **The design limitation is that the system cannot automatically detect and warn of runtime 400 verification mismatch risks caused by asymmetric regex matching sets (non-overlapping matching intervals at both ends) across multi-language frameworks.**
+### 4.2 Phase 2: Confirm & Semantic Normalization — Constraint Propagation Rule
+*   **Semantic Normalization**: Translate framework-specific regex and constraint expressions (e.g. `:id(\\d+)` for Express, `{id:int}` for FastAPI) into unified Rust-native `RouteAst` models [1.1.1].
+*   **Constraint Limitation & Compromise**:
+    Mathematically proving equivalence for arbitrary cross-language regular expressions is impractical in engineering. In v0.5.0, the confirmation engine **does not recompile constraint regex**. The original `rawConstraint` value is preserved as descriptive metadata. The alignment engine only compares path positions and basic data types during matching.
+    *   Limitation: The system cannot automatically detect or alert runtime 400 errors caused by asymmetric regex matching rules across multi-language frameworks.
 
-#### 4.3 Zero-Privilege Synchronization Mechanism and Guided Sync
-To guarantee developers' 100% control over code, the `lunar` command-line tool refuses any behavior that silently modifies human-maintained files in the background.
-*   **`lunar init`**: **Only when detecting that local `.lunar/interfaces.yml` does not exist**, automatically runs physical scanning and creates a draft file. If the file already exists, this command is directly ineffective and does not overwrite any human traces.
-*   **`lunar diff`**: Executes comparison between physical facts (AST) and the intent overlay (`interfaces.yml`), outputting a standard Git-diff style change report to the console.
-*   **`lunar sync --apply`**: A user-triggered sync merge command, supporting `--dry-run` to preview changes. Before executing the actual merge write, forcibly backs up the old `interfaces.yml` to the local hidden backup directory `.lunar/.backup/interfaces.yml.bak` (this path is automatically written to the project's `.gitignore` by `lunar init`).
-*   **AI Suggestion Patch Mechanism**: The `.lunar/suggestions/` directory stores intent overlay suggestion patches created by humans or AI (in YAML format). When merging updates into `interfaces.yml`, `lunar sync --apply` automatically detects and processes patch files inside this directory, then moves processed files into the `merged/` subdirectory.
+### 4.3 Zero-Privilege Sync & Guided Sync Mechanism
+To ensure full developer control over source code, the `lunar` CLI is forbidden from silently modifying human-maintained files in the background.
+*   **`lunar init`**: Only runs automatic scanning and generates template files if `.lunar/interfaces.yml` does not exist locally. No existing manual configurations will be overwritten.
+*   **`lunar diff`**: Compares physical AST facts with the intent overlay file, and outputs standard Git-diff style change reports to the terminal.
+*   **`lunar sync --apply`**: Manually triggered merge command; supports `--dry-run` for change preview. Before writing changes, the tool automatically backs up the old `interfaces.yml` to the hidden backup directory `.lunar/.backup/interfaces.yml.bak`. This backup path is automatically added to `.gitignore` by `lunar init`.
+*   **AI Suggestion Patch Mechanism**: The `.lunar/suggestions/` directory stores YAML patches generated by humans or AI for intent overlay updates. During `lunar sync --apply`, the CLI automatically processes patch files in this directory and moves processed patches to the `merged` subdirectory.
 
 ---
 
-### 5. Project-Level Intent Overlay and Ecosystem Configuration Specifications (YAML/JSON Schemas)
+## 5. Project-level Intent Overlay & Ecosystem Configuration (YAML/JSON Schemas)
+All configuration fields follow the Google JSON Style Guide (**camelCase**) for cross-team and cross-language consistency.
 
-To ensure uniformity in consumption across multi-language teams, all configuration fields are forcibly required to follow the Google JSON Style Guide standard camelCase format.
-
-#### 5.1 `.lunar/interfaces.yml` Specification
-The project-level centralized contract is the first gate for developers to control and define interface boundaries:
+### 5.1 `.lunar/interfaces.yml` Specification
+The project-level centralized contract acts as the primary governance layer for developers to define interface boundaries:
 ```yaml
+# ===================================================================
+# LunarAST Project Interface Contract
+# This file is owned and maintained by humans.
+# ===================================================================
+
 project: myPaymentService
-type: mixed # service / client / mixed
+type: mixed # Role: service / client / mixed
 environment: production
 
+# Manually declared APIs
 exposed:
   - path: /api/v1/payments/refund
     method: POST
-    reason: "Refund dedicated interface (planned for release next week)"
+    reason: "Refund dedicated endpoint (scheduled for next week release)"
 
+# Manual contract override for complex dynamic calls
 consumed:
   - path: /api/v1/auth/verify
     method: POST
-    targetProject: authService
-    reason: "User transaction pre-session verification"
+    targetProject: authService  # Must exist in ecosystem repos.json, otherwise ldg doctor throws an error
+    reason: "Pre-transaction session verification"
 ```
 
-#### 5.2 Ecosystem Registration Manifest: `repos.json`
+### 5.2 Ecosystem Registry: `repos.json`
 ```json
 {
   "version": "0.5.0",
   "comment": "The version field defines the schema compatibility version of this registry configuration itself.",
-  "projects": ["myPaymentService", "authService", "billingService"]
+  "projects": [
+    "myPaymentService",
+    "authService",
+    "billingService"
+  ]
 }
 ```
 
-#### 5.3 Ecosystem Centralized Topology Declaration: `ecosystem-topology.json`
+### 5.3 Ecosystem Topology Declaration: `ecosystem-topology.json`
 ```json
 {
   "ecosystem": "lunarEcosystem",
   "version": "0.5.0",
   "projects": {
-    "myPaymentService": { "layer": "businessOrchestration", "criticality": "high" }
+    "myPaymentService": {
+      "layer": "businessOrchestration",
+      "criticality": "high"
+    }
   },
   "relationships": [
-    { "from": "myPaymentService", "to": "authService", "type": "rpcSync", "reason": "Session Authentication" }
+    {
+      "from": "myPaymentService",
+      "to": "authService",
+      "type": "rpcSync",
+      "reason": "Session authentication"
+    }
   ]
 }
 ```
 
-#### 5.4 Ecosystem Build Plan Lockfile: `ecosystem-plan.json`
-This file is the decision starting point for the entire ecosystem generation build. It is entirely managed and written by ecosystem-level central automation tools, and hard-locked each time a `generationId` is produced.
+### 5.4 Ecosystem Build Lockfile: `ecosystem-plan.json`
+This file is the single source of truth for ecosystem generation builds. It is fully managed and written by ecosystem automation tools and locked upon each new `generationId`.
 ```json
 {
   "$schema": "https://routeast.dev/schema/v1/ecosystem-plan.schema.json",
   "generationId": "20260608T030000Z-a1b2c3d4",
   "created": "2026-06-08T03:00:00Z",
   "projects": {
-    "myPaymentService": { "sha": "abc123e456f789..." },
-    "authService": { "sha": "def456a789b123..." }
+    "myPaymentService": {
+      "sha": "abc123e456f789..."
+    },
+    "authService": {
+      "sha": "def456a789b123..."
+    }
   }
 }
 ```
 
 ---
 
-### 6. Data Exchange Standard Format Specification (The Exchange Contract Spec)
+## 6. Data Exchange Format Specification (The Exchange Contract Spec)
+All externally exposed artifacts follow strict static format definitions to maximize parsing efficiency and data density.
 
-As the physical product output to the entire ecosystem, data must follow a strict static format definition.
-
-#### 6.1 Structured Topology Standard: `lunar-map.json`
-
+### 6.1 Structured Topology Schema: `lunar-map.json`
+Top-level schema definition for `lunar-map.json` (fully compliant with Google camelCase naming):
 ```json
 {
   "$schema": "https://routeast.dev/schema/v1/lunar-map.schema.json",
@@ -216,31 +245,33 @@ As the physical product output to the entire ecosystem, data must follow a stric
           "sha": { "type": "string" },
           "scanStatus": { "type": "string", "enum": ["success", "failed", "stale"] },
           "interfaces": {
-            "anyOf": [
-              {
-                "type": "object",
-                "required": ["exposed", "consumed"],
-                "properties": {
-                  "exposed": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "required": ["path", "method"],
-                      "properties": { "path": { "type": "string" }, "method": { "type": "string" } }
-                    }
-                  },
-                  "consumed": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "required": ["path", "method", "targetProject"],
-                      "properties": { "path": { "type": "string" }, "method": { "type": "string" }, "targetProject": { "type": "string" } }
-                    }
+            "type": ["object", "null"],
+            "required": ["exposed", "consumed"],
+            "properties": {
+              "exposed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "method"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "method": { "type": "string" }
                   }
                 }
               },
-              { "type": "null" }
-            ]
+              "consumed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "method", "targetProject"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "method": { "type": "string" },
+                    "targetProject": { "type": "string" }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -255,7 +286,7 @@ As the physical product output to the entire ecosystem, data must follow a stric
           "serverProject": { "type": "string" },
           "path": { "type": "string" },
           "method": { "type": "string" },
-          "status": { "type": "string", "enum": ["Aligned", "ParamNameMismatch", "Unused", "Orphaned", "MethodMismatch", "Unverified"] }
+          "status": { "type": "string", "enum": ["Aligned", "ParamNameMismatch", "Unused", "Orphaned", "MethodMismatch", "unverified"] }
         }
       }
     }
@@ -263,47 +294,64 @@ As the physical product output to the entire ecosystem, data must follow a stric
 }
 ```
 
-#### 6.2 AI Context Map Standard: `lunar-map.md` (Markdown Spec)
-Rendered dynamically by `lunar-gateway` from `lunar-map.json` in real-time upon request. The gateway performs internal rendering caching for this dynamic endpoint (Cache Key: `<bucket>/cache/<generationId>/md/<style>/<scope>`), supporting parameterized filtering:
-*   `GET /lunar-map.md?style=list` (Returns plain text contract list, suitable for small context extraction)
-*   `GET /lunar-map.md?style=mermaid` (Returns topology diagram structure, suitable for global chart rendering)
-*   `GET /lunar-map.md?scope=project-a` (Sharding fetch, limiting to sub-topology related to a specific project, preventing exceeding AI context window limits)
+### 6.2 AI Context Markdown: `lunar-map.md` (Markdown Spec)
+`lunar-map.md` is not persisted as a static file in storage. Instead, **`lunar-gateway` (or local `lunar-serve`) dynamically parses and renders it from `lunar-map.json` upon client requests**. Query parameters are supported for filtering to reduce AI token consumption:
+*   `GET /lunar-map.md?summary=true`: Return condensed summary (minimum token usage, for initial AI access) [1.2].
+*   `GET /lunar-map.md?style=list`: Return plain contract list (for fast extraction in small contexts).
+*   `GET /lunar-map.md?style=mermaid`: Return topology graph (for global visualization).
+*   `GET /lunar-map.md?scope=project-a`: Sharded access for specific projects, preventing AI context window overflow.
 
 ---
 
-### 7. Open Integration and Third-Party Bridge Isolation Specification
+## 7. Open Integration & Third-party Bridge Isolation Specification
+LunarAST maintains full statelessness and data sovereignty. All external sandboxes (IDE plugins, AI Agents) must follow the **bridge isolation pattern** for integration [2]:
 
-Any external execution sandbox (such as IDE plugins, AI Agents) must follow the **"Bridge Isolation Pattern"** during integration:
-*   **Bridge Responsibility**: Third-party integrators must write independent bridge programs (e.g., `routeast-mcp-bridge`), fetch `lunar-map.json` via standard HTTP `GET` interface, and convert it internally into a specific protocol.
-*   **Non-Privileged Interaction Specification**: When writing AI-generated alignment suggestions locally, the bridge **is strictly forbidden from silently modifying `interfaces.yml`**. The bridge is only responsible for generating and outputting Git-diff format alignment patch snippets in the terminal, prompting the user to manually run local `lunar sync --apply`.
+*   **Bridge Responsibilities**: Third-party integrators build standalone bridge applications (e.g. `routeast-mcp-bridge`), which pull `lunar-map.json` via standard HTTP `GET` requests and convert it into target protocols internally.
+*   **No Unauthorized Modification Rule**: When converting AI-generated alignment suggestions into local changes, bridges are **strictly forbidden from silently modifying `interfaces.yml`**. Bridges only output Git-diff style patch snippets to the terminal and prompt users to run `lunar sync --apply` manually.
+
+```rust
+// Minimal interaction contract between bridges and LunarAST
+#[async_trait]
+pub trait LunarMcpBridge {
+    /// 1. Fetch pure static topology, support sharding via (?scope=projectX) to reduce token usage
+    async fn fetch_lunar_map(&self, gatewayUrl: &str, scope: Option<&str>) -> Result<LunarMapPayload, BridgeError>;
+    
+    /// 2. Convert topology into standard Tools & Resources schema for JSON-RPC
+    fn translate_to_mcp_tools(&self, payload: LunarMapPayload) -> Vec<McpToolSchema>;
+}
+```
 
 ---
 
-### 8. Stateless Distribution Layer Design and Security Model (`lunar-gateway`)
+## 8. Stateless Distribution Layer & Security Model (`lunar-gateway`)
 
-`lunar-gateway` focuses on high-concurrency, stateless, ultra-fast contract data secure distribution.
+`lunar-gateway` is dedicated to high-concurrency, stateless, secure distribution of contract data [2].
 
-#### 8.1 Storage Directory Structure Standard
+### 8.1 Standard Storage Directory Structure
+*   **Recommended S3 Bucket Naming**: `lunar-ast-<organization>`.
+*   **Global Topology Storage Rule**: `lunar-map.json` is an ecosystem-wide artifact and **must not be stored in the `commits` directory of any single service**. The gateway stores all generation artifacts uniformly under `ecosystem-config/`.
+
 ```
 s3://lunar-ast-<organization>/
 ├── <repo>/
 │   ├── commits/
 │   │   └── <sha>/
-│   │       └── <subdomain>-actual.json
+│   │       └── <subdomain>-actual.json # Physical fact cache (e.g. route-ast-actual.json)
 │   └── pointers/
-│       └── latest.json
+│       └── latest.json                # Composite pointer for the latest SHA
 └── ecosystem-config/
-    ├── repos.json
-    ├── ecosystem-topology.json
-    ├── latest-generation.json
+    ├── repos.json                     # Ecosystem registered project allowlist
+    ├── ecosystem-topology.json        # Orchestration & topology declaration
+    ├── latest-generation.json          # Static pointer to the current active generation
     └── generations/
         └── <generationId>/
-            ├── meta.json
-            ├── ecosystem-plan.json
-            └── lunar-map.json
+            ├── meta.json              # Metadata summary for this generation
+            ├── ecosystem-plan.json    # Build lockfile for this generation
+            └── lunar-map.json         # Global aligned topology
 ```
 
-#### 8.1.1 Metadata File: `meta.json`
+#### 8.1.1 Metadata File: `meta.json` Schema
+Generated and synced by CI/CD pipelines during build:
 ```json
 {
   "sha": "abc123e456f789...",
@@ -327,16 +375,18 @@ s3://lunar-ast-<organization>/
         },
         "removedEnums": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     }
   }
 }
 ```
-*   **Property Note**: `compilerVersion` refers to the binary version of the `lunar` core compiler that performs static analysis scanning and compiles output data; it is not bound to the gateway's version.
+*   **Field Description**: `compilerVersion` refers to the version of the `lunar` binary that performed static analysis and export. It is decoupled from the gateway version. If `downgradeMap` is missing or no compatible downgrade rule exists for the client version, the gateway rejects lossy downgrade.
 
-#### 8.1.2 Generation Global Pointer: `latest-generation.json`
+#### 8.1.2 Global Generation Pointer: `latest-generation.json` Schema
 ```json
 {
   "generationId": "20260608T030000Z-a1b2c3d4",
@@ -344,97 +394,140 @@ s3://lunar-ast-<organization>/
 }
 ```
 
-#### 8.2 Dual-Phase Isolated Cache and Client Tiered Cache Control
-*   **Internal Cache**: Uses the complete logical path of the file relative to the Bucket in object storage as the Cache Key.
-*   **Security Verification First Principle**: For private resources requiring JWT signatures, **the gateway must unconditionally complete token integrity verification first. Only after authentication is fully passed can the internal cache be matched and read**.
-*   **Client Response Differentiation**:
-    *   Private resources: `private, no-cache, no-store, must-revalidate`
-    *   Public immutable resources (under `/commits/<sha>/` and global topology under `generations/`): `public, max-age=31536000, immutable`
-    *   Latest dynamic pointers and latest generation pointers: `public, max-age=300`
-*   **Memory Protection Circuit Breaker**: Based on the typical 128MB physical memory constraint safety boundary of Cloudflare Workers, large files (> 2MB) automatically trigger buffer circuit breaking, degrading to stream-through forwarding.
+### 8.2 Dual-isolation Cache & Client Cache Control
+To balance mandatory authentication and zero object storage penetration, `lunar-gateway` adopts a dual-isolation caching strategy:
+*   **Internal Cache**: The gateway uses the full logical path of each object in the bucket as the cache key.
+*   **Authentication First Rule**: For private resources requiring JWT authentication (e.g. private project `actual.json`), **the gateway completes full token validation (signature & timestamp check) first before accessing internal cache**. Authentication can never be bypassed by cache. Internal cache uses token-free logical paths as keys for cross-client sharing.
+*   **Differentiated Client Cache Headers**:
+    *   **Private Resources (JWT required)**: Override all edge cache headers to `private, no-cache, no-store, must-revalidate` to prevent token hijacking. Internal cache still uses immutable rules with token-free keys.
+    *   **Public Immutable Resources (No token required)**: Artifacts under `/commits/<sha>/`, `generations/` (including `lunar-map.json`, `ecosystem-plan.json`, `meta.json`) return `Cache-Control: public, max-age=31536000, immutable` for long-term client caching.
+    *   **Dynamic Pointers (`/pointers/latest.json` & `latest-generation.json`)**: Allow short-lived client caching with `Cache-Control: public, max-age=300` to balance performance and version consistency.
+*   **Dynamic Render Cache & OOM Protection**:
+    *   **Render Cache**: For `lunar-map.md` requests, the gateway caches rendered Markdown content using composite keys `(Accept, scope, generationId)`. Cache lifetime is strictly aligned with the corresponding `lunar-map.json` version.
+    *   **Memory Circuit Breaker**: Following the 128MB memory limit of Cloudflare Workers, files larger than 2MB trigger a circuit breaker: in-memory buffering is disabled, and **stream-through forwarding** is used instead to avoid isolate crashes. The threshold can be customized via the environment variable `LUNAR_GATEWAY_BUFFER_LIMIT_BYTES`.
 
-#### 8.3 Security Verification and JWT Signature Contract
-*   **Signature Algorithm**: Mandatory use of **Ed25519 (EdDSA)** as the sole signature algorithm, guaranteeing constant-time verification.
-*   **Expiration Policy**: The `exp` claim in the JWT is recommended not to exceed 24 hours.
-*   **Public Key Cache Rotation**: `MAX_KEYS_PER_REPO = 3` (each physical service/project retains at most the latest and 2 valid historical public key fingerprints), preventing malicious registration from exhausting gateway memory.
+### 8.3 Authentication & JWT Signature Contract
+*   **Signature Algorithm**: **Ed25519 (EdDSA)** is enforced as the sole signing algorithm for constant-time verification [1.3.3].
+*   **Expiry Policy**: The JWT `exp` claim is recommended to be set to a maximum of 24 hours.
+*   **Public Key Distribution & KV Cache Rotation**: Public keys can be deployed via static Worker environment variables or dynamic Cloudflare KV. To control memory usage, the gateway limits each project to store a maximum of 3 active public keys (`MAX_KEYS_PER_REPO = 3`) to prevent memory exhaustion from malicious key registration.
+*   **URL Token Warning**: Passing JWT tokens via URL parameters is strongly discouraged in production. The gateway outputs security warnings to `stderr` when URL-borne tokens are detected.
 
-#### 8.4 Version Negotiation and Backward Compatibility Strategy
-The client carries `Accept: application/vnd.lunar.0.5.0+json`. **The gateway must maintain a data downgrade compatibility window for the currently active major version and the immediately preceding major version.** Only when a predefined, lossless mapping table exists between the new and old versions does the gateway perform automatic downgrade; otherwise, it returns `406 Not Acceptable` and attaches an `X-Lunar-Upgrade-Required: true` header.
+### 8.4 Version Negotiation & Backward Compatibility
+When the major version of `lunar-map.json` is incremented (e.g. 0.5.0 → 1.0.0), clients negotiate compatibility via HTTP content type parameters:
+*   **Negotiation Rule**: Clients send requests with the header `Accept: application/vnd.lunar.0.5.0+json`. The gateway maintains a compatibility window for **the current major version and the immediate previous major version (total 2 versions)**.
+*   **Downgrade Boundary**: Automatic downgrade is only allowed if lossless mapping rules exist in `downgradeMap` inside `meta.json`. If breaking changes are introduced (required fields removed, enums modified), the gateway returns `406 Not Acceptable` with the header `X-Lunar-Upgrade-Required: true` and refuses downgrade.
 
----
-
-### 9. Alignment Status Priority and Diagnostic Classification (Diagnostic Short-Circuit)
-
-The alignment engine performs one-way short-circuit evaluation on the input server and client `RouteAST` lists:
-
-$$\text{Unverified} > \text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMismatch} > \text{Aligned}$$
-
-*   **Failure Isolation and Stale Node Alignment Mechanism (Unverified Status Isolation)**:
-    To prevent data gaps caused by some projects in the ecosystem failing to scan (`scanStatus: failed`) or having stale data due to uncoordinated CI builds (`scanStatus: stale`):
-    1.  **Alignment Isolation Extraction**: The alignment engine must retrieve the `scanStatus` from the `projects` array before computation.
-    2.  **`stale` Node Handling**: The `exposed` and `consumed` data contained in projects with `stale` status **will still be read and participate in the comparison computation by the alignment engine**. However, all final alignment results produced are **forcibly marked with `status: "Unverified"`**.
-    3.  **`failed` Node Handling**: Since `failed` projects cannot fetch valid `interfaces` definitions (they are `null`), no actual comparison can be performed. **The alignment engine must traverse all other healthy projects in the current generation topology. Whenever it detects that a healthy project has initiated interface consumption (`consumed`) targeting this `failed` service, the alignment engine does not perform conventional comparison checks but directly generates an alignment entry with `status: "Unverified"` for it.** Because the `failed` project has no valid interface data (its `interfaces` field is `null`), its own exposed interfaces will not generate any alignment entries in the `alignments` array, and thus will not be erroneously determined as `Unused`.
+### 8.5 Crate Refactoring & Cargo Workspace Dependency Governance
+To avoid module deadlocks and excessive compilation overhead as the ecosystem scales, LunarAST adopts decoupled Cargo Workspace rules:
+1.  **Isolate Contract Crate**: Extract the zero-dependency core crate `lunar-interface`, which only contains core data models (`RouteEntry`, `ActualJson`, `LunarMap`) and the `generate_lunar_map` topology alignment logic.
+2.  **Decouple CLI & Serving Layers**: Distribution layers (`lunar-serve`, `lunar-gateway`) depend **only** on `lunar-interface`. Direct or indirect dependencies on CLI-only crates (e.g. `clap`, `rust-s3`, `ed25519-dalek`) are forbidden. This maximizes compilation speed and keeps serving layers lightweight.
 
 ---
 
-### 10. Observability and Health Check Specification
+## 9. Alignment Status Priority & Diagnostic Rules (Diagnostic Short-Circuit)
+The alignment engine evaluates client-side and server-side `RouteAst` entries with short-circuit logic. Each interface pair maps to exactly one final status, with priority defined as:
+$$\text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMismatch} > \text{Aligned}$$
 
-#### 10.1 Structured Logging Specification (JSON Lines)
-The gateway outputs single-line JSON structured logs to `stdout`. `authStatus` state machine: `valid`, `expired`, `invalidSignature`, `missingToken`.
-
-#### 10.2 Metrics Exposure (Prometheus Metrics)
-*   `lunar_gateway_requests_total`
-*   `lunar_gateway_cache_hits_total`
-*   `lunar_gateway_auth_failures_total`
-*   `lunar_gateway_version_downgrade_requests_total`
-(When exposing to Prometheus, label names like `targetVersion` are automatically converted by the implementation layer to the underscore-delimited naming format `snake_case` conforming to Prometheus best practices, e.g., `target_version`)
-
-#### 10.3 Liveness Health Check
-The gateway exposes a fast read-only probe endpoint without signature verification: `GET /healthz`, returning `200 OK` directly upon success, for container and edge runtime liveness detection.
-
----
-
-### 11. Security Threat Model and Defense Strategy
-
-1.  **Injection Attack Prevention**: Use specific lexical rule regex combined with AST node type joint determination for the target language's physical comment syntax. Any malformed comments not matching preset rules or with extremely non-compliant formats must output the store path, a Warning, and the line number to `stderr`, and be forcibly ignored, not passed to the backend AST tree.
-2.  **Key Rotation Overflow Defense**: `MAX_KEYS_PER_REPO = 3`.
-3.  **S3 Credential Minimization**: Only `s3:PutObject` and `s3:GetObject`.
-4.  **Destructive Action Mistouch Prevention Barrier**: All destructive actions involving the local CLI (like `lunar cleanup`) must undergo **secondary interactive blocking confirmation** in the terminal. Only when the non-interactive override flag (like `--yes`) is explicitly appended in the CLI is the interactive prompt allowed to be skipped.
+*   **Handling Failed & Stale Nodes (`unverified` Status)**:
+    To prevent false alignment errors caused by incomplete or outdated data from failed/stale CI builds:
+    1.  **Pre-check**: The alignment engine reads the `scanStatus` field of all projects in the `projects` array before computation [2].
+    2.  **`stale` Nodes**: Data from `stale` projects is included in alignment computation, but **all resulting alignment entries are forced to `unverified`** [2].
+    3.  **`failed` Nodes**: Projects marked `failed` have `interfaces: null` and cannot participate in regular comparison. The engine scans all other healthy projects: if any healthy project consumes endpoints from the `failed` service, a dedicated alignment entry with `status: "unverified"` is generated. Exposed interfaces from `failed` projects do not generate alignment entries and will not be misclassified as `Unused`.
+    4.  **`unverified` Semantics**: Entries marked `unverified` are rendered as yellow warning lines in `lunar-scope`. They are not treated as formal contract violations during auditing, indicating only outdated or unavailable data sources.
+*   **Diagnostic Rules (Short-circuit by Severity)**:
+    1.  **MethodMismatch (Priority 1)**: Path structure matches, but HTTP methods differ (e.g. client uses `POST`, server exposes `GET`). Evaluation terminates immediately.
+    2.  **Orphaned (Priority 2)**: A client calls an endpoint, but no registered service in `repos.json` provides a matching path and method (broken endpoint).
+    3.  **Unused (Priority 3)**: Topology-level global status: A server exposes an endpoint with no clients consuming it. Identified in the post-processing phase of `lunar-map.json` generation. Critical for architecture governance and attack surface reduction.
+    4.  **ParamNameMismatch (Priority 4)**: Path position and data type match, but parameter names differ. Triggers magnetic dashed warning lines in the frontend.
 
 ---
 
-### 12. Core Error Codes and Debugging Guide
+## 10. Observability & Health Check Specification
 
-| Error Code | HTTP Status Code | Physical Cause | Recommended Recovery Plan |
+### 10.1 Structured Logging (JSON Lines)
+`lunar-gateway` and local read-only services output single-line JSON structured logs to `stdout` (camelCase fields):
+```json
+{"timestamp":"2026-06-12T01:00:00Z","level":"INFO","method":"GET","path":"/public/repo-a/commits/sha-123/lunar-map.json","status":200,"durationMs":12,"cache":"HIT","authStatus":"valid","clientIp":"12.34.56.78"}
+```
+*   **`authStatus` Enums**: `valid` / `expired` / `invalidSignature` / `missingToken`.
+
+### 10.2 Prometheus Metrics
+The gateway exposes a standard `/metrics` endpoint for in-memory statistics. All `camelCase` labels are converted to `snake_case` to follow Prometheus conventions:
+*   `lunar_gateway_requests_total`: Total request counter, labels: `method`, `status`.
+*   `lunar_gateway_cache_hits_total`: Cache hit counter, labels: `cacheType` (`internal`/`client`).
+*   `lunar_gateway_auth_failures_total`: Authentication failure counter, labels: `reason` (`expired`/`signatureInvalid`/`missingToken`).
+*   `lunar_gateway_version_downgrade_requests_total`: Downgrade request counter, label: `targetVersion`. Used to track client version migration progress.
+
+### 10.3 Liveness Health Check
+The gateway exposes a token-free liveness probe: `GET /healthz`, returns `200 OK` on success for container and edge runtime health monitoring.
+
+---
+
+## 11. Security Threat Model & Mitigation Strategies
+Four layers of defense for zero-trust environments:
+
+1.  **Injection Attack Prevention & Lexical Rules**:
+    Since inline `// lunar:` / `# lunar:` directives are parsed lexically, strict lexical filtering combined with AST node validation is enforced for each language. Adapters only parse lines matching predefined regex rules (e.g. `#\s*lunar:(expose|consume)` for Python, `<!--\s*lunar:(expose|consume)\s*-->` for HTML). Malformed or unmatched lines are logged to `stderr` with file path and line numbers, then discarded to block injection risks.
+2.  **Key Rotation & Memory Protection**:
+    The gateway uses soft TTL cache for public keys and limits `MAX_KEYS_PER_REPO = 3` to prevent memory exhaustion from excessive obsolete public keys.
+3.  **Least-privilege S3 Credentials**:
+    CI Action S3 credentials are granted only `s3:PutObject` and `s3:GetObject` permissions for the target bucket. Bucket deletion or IAM policy modification permissions are strictly denied.
+4.  **Destructive Operation Confirmation**:
+    All destructive or ecosystem-wide cleanup commands (e.g. `lunar cleanup`) require interactive confirmation in the terminal. The `--yes` flag skips prompts only for CI/CD automation, preventing accidental misuse.
+
+---
+
+## 12. Core Error Codes & Troubleshooting Guide
+
+| Error Code | HTTP Status Code | Root Cause | Recommended Resolution |
 |:---|:---|:---|:---|
-| `ERR_LUNAR_CONFIRM_FAIL` | 400 | Normalization verification failed. | Run `lunar diff`. |
-| `ERR_LUNAR_ADAPTER_CRASH` | 422 | Subprocess extractor crashed or count mismatch. | Check CI log stderr. |
-| `ERR_LUNAR_PROJECT_NOT_FOUND` | 404 | Target project not defined in `repos.json`. | Add to `repos.json`. |
-| `ERR_LUNAR_INTERFACE_NOT_FOUND` | 422 | Target project exists but does not expose a method or path matching the client consumption. | Run `lunar diff`. |
-| `ERR_LUNAR_INTERFACE_DATA_MISSING` | 410 | Due to project scan failure or not ready during alignment build phase (scanStatus: failed), and `interfaces` is `null`, the gateway completely lacks a reverse derivation data source when attempting to provide it for the consumer, unable to downgrade recovery. | Run `lunar doctor`, troubleshoot the failed heterogeneous sub-service. |
-| `ERR_VERSION_EXPIRED` | 410 | Physical fact cache purged after exceeding 90 days. | Response header carries `X-Lunar-Recovery` header (and optional `X-Lunar-Recovery-Webhook`), guiding and encouraging developers to re-trigger CI build in the corresponding repository. |
-| `ERR_GATEWAY_STREAM_FALLBACK_FAILED` | 502 | Downgraded stream-through fallback to origin failed. | Check `lunar-map.json` and origin connectivity. |
+| `ERR_LUNAR_CONFIRM_FAIL` | 400 | Normalization validation failed; wildcard/constraint syntax invalid. | Run `lunar diff` and fix syntax errors in reported segments. |
+| `ERR_LUNAR_ADAPTER_CRASH` | 422 | Adapter subprocess crashed, or parsed entry count mismatches the `count` value in the end marker (truncated data). | Check adapter stack traces in CI `stderr` logs. |
+| `ERR_LUNAR_PROJECT_NOT_FOUND` | 404 | Target project not registered in `repos.json`. | Add the project to `repos.json` and retrigger build. |
+| `ERR_LUNAR_INTERFACE_NOT_FOUND` | 422 | Target project exists, but no exposed method/path matches the client request. | Run `lunar diff`, align client consumption and server exposure rules, then update `interfaces.yml` and sync. |
+| `ERR_LUNAR_INTERFACE_DATA_MISSING` | 410 | Source data unavailable due to build failure (`scanStatus: failed`, `interfaces: null`). | Run `lunar doctor` to diagnose build failures across distributed services. |
+| `ERR_VERSION_EXPIRED` | 410 | Physical fact artifacts auto-purged after 90 days retention. | The response includes the `X-Lunar-Recovery` header with CI webhook URL; retrigger CI pipeline for the target repository. |
+| `ERR_GATEWAY_STREAM_FALLBACK_FAILED` | 502 | Stream-through forwarding failed for oversized files (>2MB). | Remove non-essential static assets from `lunar-map.json` and verify storage backend connectivity. |
 
 ---
 
-### 13. Roadmap and Core Evolution Milestones
+## 13. Roadmap & Core Evolution Milestones
+Timeline is not strictly defined; delivery is milestone-driven with tangible artifacts:
 
-*   **Milestone 1**: Freeze RouteAST Base IR, implement Rust Confirm Core prototype, provide Rust/Node adapters.
-*   **Milestone 2**: Release `lunar` command-line tool, deploy stateless edge gateway `lunar-gateway`, establish security baseline.
-*   **Milestone 3**: Release `lunar-scope` intelligent physical magnetic canvas, support `Unused` and `Unverified` interface status visualization.
-*   **Milestone 4**: Release TypeAST contract standard, complete full-stack static interface alignment and drift defense.
+*   **Milestone 1 (RouteAST Core Implementation)**:
+    *   Freeze `RouteAST Base IR v0.5.0` specification.
+    *   Implement pure Rust confirmation core prototype.
+    *   Release lightweight adapters for Rust (Axum) and Node.js (Express).
+*   **Milestone 2 (Full Four-tier Architecture & Secure Distribution)**:
+    *   Release `lunar` CLI with core commands: `init`, `scan`, `diff`, `sync --apply`.
+    *   Deploy `lunar-gateway` with dual-cache, tiered cache control, memory circuit breaker, structured logging and Prometheus metrics.
+    *   Complete multi-crate Workspace decoupling with standalone `lunar-interface`. Implement case normalization and two-tier path fallback.
+*   **Milestone 3 (Multi-dimensional Visualization & Standard Finalization)**:
+    *   Release `lunar-scope` interactive canvas with magnetic positioning and full status visualization for `Unused` / `unverified` endpoints.
+    *   Freeze `EventAST` & `SchemaAST` specifications and release official adapters.
+*   **Milestone 4 (Full Static Code Audit & Open Ecosystem)**:
+    *   Release `TypeAST` specification and cross-project compile-time dependency auditing.
+    *   Expose standard `lunar-map.json` for third-party security audit platforms; implement full-stack static alignment and drift prevention.
 
 ---
 
-## References and Specification Sources
-
-*   RFC 6570 - URI Template Specification
-*   IEEE Std 1471-2000 - Architectural description of software-intensive systems
-*   JSON Lines Standard (v1.0)
-*   WASI 0.2 (Component Model)
-*   ACM TOSEM Vol. 33 - Cross-Language Static Program Analysis
-*   NIST FIPS 186-5 - Digital Signature Standard
+## Appendix B: References & Specification Sources
+*   RFC 6570 - URI Template Specification for parameter standardization.
+*   IEEE Std 1471-2000 - Systems and software engineering - Recommended practice for architectural description of software-intensive systems.
+*   JSON Lines Standard (v1.0) - Line-Delimited JSON streaming format.
+*   WASI 0.2 (Component Model) - WebAssembly System Interface specification.
+*   ACM TOSEM Vol. 33 - Cross-Language Static Program Analysis on Microservice Topologies.
+*   [1.3.3] NIST FIPS 186-5 - Digital Signature Standard (DSS) guidelines for Ed25519 system signature integration and curve verification.
 
 ---
 
-*"Contract supremacy, not a fraction off. Let multi-language routing dialects converge here, achieving zero-intrusion, deterministic network alignment."*
+### A.5 CLI Quick Reference (Cheat Sheet)
+```bash
+lunar init                     # Auto-detect tech stack and initialize local template (only if interfaces.yml does not exist)
+lunar scan                     # Perform static scan for physical facts and write to .interfaces-autogen.json
+lunar diff                     # Print Git-diff style comparison between physical facts and intent overlay
+lunar sync --dry-run           # Preview sync changes before applying
+lunar sync --apply             # Backup old config then merge and write changes
+lunar doctor                   # Verify S3/R2 connectivity, pointer status and global topology consistency
+lunar cleanup --all            # Interactive cleanup of all S3/R2 artifacts for current repo (commits/ + pointers/); add --yes to skip prompt (high risk)
+```
