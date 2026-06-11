@@ -2,8 +2,8 @@
 
 **——多层异构静态契约标准与“生、传、标、展”四层架构规范**
 
-**版本**：1.5 — 规范标准设计版（最终闭环版）  
-**最后更新**：2026-06-08  
+**版本**：1.6 — 规范标准设计与重构升级版（完全闭环版）  
+**最后更新**：2026-06-12  
 
 ---
 
@@ -15,6 +15,7 @@
 |:---|:---|:---|
 | **LunarAST** | **标准规范层** | 制定多层契约（RouteAST、EventAST 等）的 Base IR 规范、提取协议与数学比对算法语义 [5]。它是底层的静态契约标准，作为静态 Schema 规范存在，本身不包含可运行代码。 |
 | **`lunar`** | **数据生成层** | 用户本地与 CI 管道的命令行可执行二进制。负责 `lunar init`（初始化底稿）、`lunar scan`（物理提取）、`lunar diff`（无越权比对）和 `lunar sync --apply`（主动备份并安全同步） [2]。对齐决策与合并逻辑完全在此执行。 |
+| **`lunar-serve`** | **本地只读分发层** | 本地运行的极轻量只读 HTTP 分发层二进制。依赖 `lunar-interface`，提供开发态下的 `lunar-map.json` 本地高保真渲染，并支持在零人工配置状态下，通过 Fallback 机制安全、按需、免归档地为 AI Agent 直接提供本端物理工作区的源码镜像直读。 |
 | **`lunar-gateway`** | **无状态分发层** | 独立部署的 Serverless 边缘网关程序。编译为 `wasm32-wasip2` [4]，执行基于安全令牌（Ed25519-JWT）的单向鉴权与高并发双阶段隔离缓存分发 [2]。网关不运行任何实时接口对齐比对逻辑。 |
 | **`lunar-scope`** | **可视化呈现层** | 纯静态的前端多层关系画布。通过标准 API 从网关拉取已在构建期对齐完备的拓扑 JSON，在浏览器中渲染具有磁吸预测虚线、断点高亮与架构漂移警告的前端人机交互界面。 |
 
@@ -95,7 +96,23 @@
 *   **反向推导机制与空值防御**：
     若 `<subdomain>-actual.json` 缓存由于网络或生命周期过期在存储桶中物理缺失，网关将强制从 `lunar-map.json` 中的 `projects[].interfaces` 执行数据反向推导。
     *   **空值异常防御**：若对应项目的 `interfaces` 已在构建期因为失败隔离被置为 `null`，网关判定该项目反向推导数据源物理不可用。网关立即中断分发，向客户端返回 `410 Gone` 并附加 `X-Lunar-Recovery` 头部引导重新构建，并在响应体中携带 `ERR_LUNAR_INTERFACE_DATA_MISSING` 错误码。
-    *   **构建失败隔离与实际文件存在的不一致性批注（Honest Disclosure）**：在中心管道将某个超时未就绪项目标记为 `scanStatus: failed` 且 `interfaces: null` 后，该项目的 CI 容器可能在稍后时刻完成了 `actual.json` 的单独上传。此时，存储桶中该文件物理存在，而全局拓扑由于构建隔离将其视为不可用。当客户端绕过拓扑、直接通过 `GET /commits/<sha>/route-ast-actual.json` 访问该项目接口时，网关将返回成功。此类不一致由分布式编译的失败隔离边界引起，开发人员必须使用 `lunar doctor` 进行全局状态的一致性诊断。
+    *   **构建失败隔离与实际文件存在的不真实性批注（Honest Disclosure）**：在中心管道将某个超时未就绪项目标记为 `scanStatus: failed` 且 `interfaces: null` 后，该项目的 CI 容器可能在稍后时刻完成了 `actual.json` 的单独上传。此时，存储桶中该文件物理存在，而全局拓扑由于构建隔离将其视为不可用。当客户端绕过拓扑、直接通过 `GET /commits/<sha>/route-ast-actual.json` 访问该项目接口时，网关将返回成功。此类不一致由分布式编译的失败隔离边界引起，开发人员必须使用 `lunar doctor` 进行全局状态的一致性诊断。
+
+### 3.2 零摩擦源码投影与降级寻路规范（Zero-Friction Source Code Projection）
+
+为了在契约拓扑（Topology）之外，为 AI Agent 提供免归档、零摩擦、按需加载的源码镜像消费能力，系统必须支持“URL 投影”与“路径 Fallback”机制：
+
+1.  **路由别名等价化（Route Aliasing）**：
+    网关及本地只读服务在提供 GitHub 镜像访问时，必须将 `/blob/` (网页文件查看) 路径与 `/raw/` (原始文本直读) 路径在路由级别完全等价化处理。AI 可无视 URL 语法差异，直接通过将 `github.com` 替换为生态分发域名，获取物理文件内容 [1.2]。
+2.  **绝对路径两级回落（Base Path Fallback Priority）**：
+    服务端在解析项目物理工作区路径时，强制执行以下降级链路，拒绝任何全局强制硬编码：
+    $$\text{ResolvedPath} = \begin{cases} 
+      \text{Registry.path}, & \text{if specified in repos.json} \\
+      \text{Topology.path}, & \text{else if automatically discovered in lunar-map.json} \\
+      \text{Error (400)}, & \text{otherwise} 
+    \end{cases}$$
+3.  **大小写自适应归一化（Case-Insensitive Normalisation）**：
+    在匹配 GitHub 网络坐标 `{owner}/{repo}/{branch}` 时，网关与服务层必须在内存中强制进行小写归一化（Lowercase Normalisation）哈希映射，彻底消除跨平台大小写命名差异导致的分发断层 [1.2]。
 
 ---
 
@@ -105,7 +122,7 @@
 *   **适配器发现与覆盖机制**：
     `lunar` 控制层默认通过系统环境变量 `PATH` 动态检索命名匹配为 `lunar-extract-<lang>` 的可执行二进制。用户可通过在 `.lunar/config.yml` 中显式指定 `adapters` 路径进行绝对路径覆盖，其优先级高于 `PATH` 自动发现。
 *   **行分隔 JSON 通信（JSON Lines）与原子性结束标记**：
-    Orchestrator 启动适配器子进程。为了防御大型项目下的堆溢出，适配器必须采用流式输出（Line-by-line Flushing） [3]。适配器每提取一条路由，立即将其写入 `stdout` 并执行 `flush`，严禁在内存中累积整个数据集再进行全量序列化 [3]。
+    Orchestrator 启动适配器子进程。为了防御大型项目下的堆溢出，适配器必须采用流式输出（Line-by-line Flushing） [3]. 适配器每提取一条路由，立即将其写入 `stdout` 并执行 `flush`，严禁在内存中累积整个数据集再进行全量序列化 [3]。
     *   **输出流原子性与计数校验（End-of-Stream Marker）**：为了防止适配器执行中途崩溃（Crash）导致控制层误接收不完整、发生破损的接口列表，**适配器必须在所有路由提取成功后，在最后一行输出一条特殊的结束标记行**：
         `{"_lunar": {"status": "success", "count": 42}}`
         **Orchestrator 接收到此标记行后，必须强力校验实际接收解析出的路由总数是否等于 `count`。若不一致（暗示数据发生截断或丢失），Orchestrator 丢弃所有行并直接触发 `ERR_LUNAR_ADAPTER_CRASH`。** 所有的调试与警告日志一律重定向输出至 `stderr`，严禁污染 `stdout` [1.2.1]。
@@ -286,7 +303,8 @@ consumed:
 ```
 
 ### 6.2 AI 上下文地图标准：`lunar-map.md` (Markdown Spec)
-在请求时，存储桶不支持静态存储 `lunar-map.md`，而是**由 `lunar-gateway` 在接收到客户端请求时从 `lunar-map.json` 中实时解析、翻译并动态渲染输出**。支持通过以下查询参数实施参数化过滤以降低 AI 的 Token 消耗：
+在请求时，存储桶不支持静态存储 `lunar-map.md`，而是**由 `lunar-gateway` (或边缘 `lunar-serve`) 在接收到客户端请求时从 `lunar-map.json` 中实时解析、翻译并动态渲染输出**。支持通过以下查询参数实施参数化过滤以降低 AI 的 Token 消耗：
+*   `GET /lunar-map.md?summary=true`（返回极简摘要，最省 Token，适合 AI 首次接入） [1.2]。
 *   `GET /lunar-map.md?style=list`（返回纯文本契约列表，适合小上下文快速提取）。
 *   `GET /lunar-map.md?style=mermaid`（返回拓扑图结构，适合全局图表渲染）。
 *   `GET /lunar-map.md?scope=project-a`（通过分片获取，限定特定项目相关的子拓扑，防止超出 AI 上下文窗口限制）。
@@ -406,6 +424,15 @@ s3://lunar-ast-<organization>/
     客户端发起请求时，携带 Header `Accept: application/vnd.lunar.0.5.0+json`。**网关必须对当前活跃的主版本和紧邻的上一个主版本（即共两个主版本）保持数据降级兼容窗口。**
     *   **降级边界**：仅当新旧版本之间存在预定义的、无信息丢失的映射表（由 `meta.json` 里的 `downgradeMap` 描述）时，网关才执行自动降级；若主版本间发生必填字段变更、枚举值增删或语义不兼容，网关不得执行自动降级，必须返回 `406 Not Acceptable`，并附加 `X-Lunar-Upgrade-Required: true` 头部。
 
+### 8.5 Crates 物理重组与 Workspace 依赖治理（Decoupled Workspace Spec）
+
+为了防御生态系统膨胀带来的模块死锁与不必要编译负担，LunarAST 采用 Cargo Workspace 多 Crate 隔离治理规范：
+
+1. **契约标准库物理分离（The Interface Crate）**：
+   提取出零依赖的静态契约库 `lunar-interface`。该库仅保留 `RouteEntry`、`ActualJson`、`LunarMap` 等核心数据模型以及 `generate_lunar_map` 图对齐逻辑。
+2. **CLI 与 Server 端依赖去耦（Decoupling CLI from Serving Layers）**：
+   分发层（`lunar-serve`、`lunar-gateway`）仅依赖 `lunar-interface` 契约库，严禁直接或间接依赖包含 `clap`、`rust-s3`、`ed25519-dalek` 等 CLI 专属载荷的 `lunar` 单体二进制。从而最大化保证编译速度与服务端的轻量化运行。
+
 ---
 
 ## 9. 对齐状态优先级与诊断分类 (Diagnostic Short-Circuit)
@@ -430,9 +457,9 @@ $$\text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMisma
 ## 10. 可观测性与健康检查规范
 
 ### 10.1 结构化日志规范（JSON Lines）
-`lunar-gateway` 必须向 `stdout` 输出单行换行分隔的标准 JSON 结构化日志，其格式全量采用 `camelCase` 并包含以下基本属性：
+`lunar-gateway` 与本地只读服务必须向 `stdout` 输出单行换行分隔的标准 JSON 结构化日志，其格式全量采用 `camelCase` 并包含以下基本属性：
 ```json
-{"timestamp":"2026-06-08T01:00:00Z","level":"INFO","method":"GET","path":"/public/repo-a/commits/sha-123/lunar-map.json","status":200,"durationMs":12,"cache":"HIT","authStatus":"valid","clientIp":"12.34.56.78"}
+{"timestamp":"2026-06-12T01:00:00Z","level":"INFO","method":"GET","path":"/public/repo-a/commits/sha-123/lunar-map.json","status":200,"durationMs":12,"cache":"HIT","authStatus":"valid","clientIp":"12.34.56.78"}
 ```
 *   **`authStatus` 状态机定义**：仅允许取值：`valid`（合规通过）、`expired`（令牌过期）、`invalidSignature`（签名未通过）、`missingToken`（未带令牌）。
 
@@ -470,7 +497,7 @@ $$\text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMisma
 | `ERR_LUNAR_CONFIRM_FAIL` | 400 | 阶段二归一化校验不通过，通配符格式不合规。 | 运行 `lunar diff`，检查提示的语法不合规段。 |
 | `ERR_LUNAR_ADAPTER_CRASH` | 422 | 阶段一子进程提取器崩溃（如 Node 解析器语法错误），或者流式读取的实际条目总数与结束标记行中的 `count` 校验值失配（数据发生截断）。 | 检查 CI 日志中对应适配器的 stderr 堆栈信息。 |
 | `ERR_LUNAR_PROJECT_NOT_FOUND` | 404 | 目标项目未在生态注册清单 `repos.json` 中定义。 | 将目标项目添加至生态 `repos.json` 清单并重新触发构建。 |
-| `ERR_LUNAR_INTERFACE_NOT_FOUND` | 422 | 目标项目存在，但未暴露符合客户端消费的方法或路径。 | 运行 `lunar diff`，检查客户端消费与服务端暴露的差异，修改 interfaces.yml 并进行同步。 |
+| `ERR_LUNAR_INTERFACE_NOT_FOUND` | 422 | 目标项目存在，但未暴露符合客户端消费的方法 or 路径。 | 运行 `lunar diff`，检查客户端消费与服务端暴露的差异，修改 interfaces.yml 并进行同步。 |
 | `ERR_LUNAR_INTERFACE_DATA_MISSING` | 410 | 由于对齐构建期项目扫描失败或未就绪（scanStatus: failed），且 `interfaces` 字段为 `null`，网关在试图为消费者提供反向推导数据源时彻底缺失，无法降级恢复。 | 运行 `lunar doctor`，排查构建失败的异构子服务。 |
 | `ERR_VERSION_EXPIRED` | 410 | 物理事实缓存已在对象存储中超过 90 天被自动清除。 | 终端提示 `Hanging Pointer`。网关在返回该错误时，响应头部必须附带 `X-Lunar-Recovery: Trigger CI pipeline for <repo>` 及预配置的 CI 自动化 Trigger Webhook 路径。**指引并鼓励开发者在对应仓库重新触发 CI 构建。** |
 | `ERR_GATEWAY_STREAM_FALLBACK_FAILED` | 502 | 契约文件体积超限（>2MB），降级流式转发时回源失败。 | 检查 `lunar-map.json` 是否混入了非必要的前端静态资源，并检查存储源站连通性。 |
@@ -488,7 +515,7 @@ $$\text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMisma
 *   **Milestone 2 (完整四层架构与安全分发)**：
     *   发布用户侧工具 `lunar` 命令行工具，实现 `init`, `scan`, `diff`, `sync --apply` 核心指令。
     *   部署无状态边缘网关 `lunar-gateway`（支持双阶段缓存、分级缓存控制、边缘内存保护与熔断、可观测性日志及 Prometheus 监控）。
-    *   确立安全基线体系。
+    *   **【重构升级达成】**：实现多 Crates 模块化 Workspace 架构解耦，抽离轻量化 `lunar-interface` 核心模型，使 `lunar-serve` 与命令行应用依赖彻底解绑，完成大小写自适应和本地工作区路径自动探测两级寻路回落 [1.2]。
 *   **Milestone 3 (多维呈现与事实标准建立)**：
     *   发布前端基于 `MatchResult` 状态优先级机制的 **lunar-scope 智能物理磁吸画布**，支持 `Unused` 和 `unverified` 接口状态可视化 [2]。
     *   冻结 `EventAST` 与 `SchemaAST` 规范标准，发布官方事件/数据适配器。
