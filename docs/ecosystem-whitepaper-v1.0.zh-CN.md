@@ -3,7 +3,7 @@
 **——多层异构静态契约标准与“生、传、标、展”四层架构规范**
 
 **版本**：1.6 — 规范标准设计与重构升级版（完全闭环版）  
-**最后更新**：2026-06-12  
+**最后更新**：2026-06-13  
 
 ---
 
@@ -86,7 +86,7 @@
     2.  **计划发布**：该计划文件被上传至 `ecosystem-config/generations/<generationId>/ecosystem-plan.json`。
     3.  **中心管道激活**：该计划文件的上传事件直接作为静态信号，单向触发中心化对齐构建管道，消除“先有鸡先有蛋”的死锁 [2]。
 *   **核心对齐与检验边界**：
-    1.  **输入合规校验（Set Equality）**：**中心管道在启动时强制校验 `ecosystem-plan.json` 中定义的所有项目集合必须与生态注册清单 `repos.json` 中声明的项目集合完全相等（Set Equality）。** 若计划中缺少任何已注册项目或包含未注册项目，中心管道必须拒绝执行、抛出错误并退出，强制要求重新生成完整的锁文件，确保每一次世代快照均为全生态的完整投影，防范局部快照缺失引发的大规模虚假对齐异常。
+    1.  **输入合规校验（Set Equality）**：**中心管道在启动时强制校验 `ecosystem-plan.json` 中定义的所有项目集合必须与生态注册清单 `repos.json` 中声明的项目集合完全相等（Set Equality）。** 若计划中缺少任何已注册项目 or 包含未注册项目，中心管道必须拒绝执行、抛出错误并退出，强制要求重新生成完整的锁文件，确保每一次世代快照均为全生态的完整投影，防范局部快照缺失引发的大规模虚假对齐异常。
     2.  **构建幂等性保证**：管道首先检查 `ecosystem-config/generations/<generationId>/lunar-map.json` 是否已存在。若已存在，判定该世代对齐已静态就绪，直接跳过计算。
     3.  **世代拉取与隔离判定**：管道并行拉取所有项目的 `actual.json` 缓存：
         *   若所有声明项目的目标 `actual.json` 均已就绪：中心管道对齐数据并生成全局 `lunar-map.json`。
@@ -96,7 +96,7 @@
 *   **反向推导机制与空值防御**：
     若 `<subdomain>-actual.json` 缓存由于网络或生命周期过期在存储桶中物理缺失，网关将强制从 `lunar-map.json` 中的 `projects[].interfaces` 执行数据反向推导。
     *   **空值异常防御**：若对应项目的 `interfaces` 已在构建期因为失败隔离被置为 `null`，网关判定该项目反向推导数据源物理不可用。网关立即中断分发，向客户端返回 `410 Gone` 并附加 `X-Lunar-Recovery` 头部引导重新构建，并在响应体中携带 `ERR_LUNAR_INTERFACE_DATA_MISSING` 错误码。
-    *   **构建失败隔离与实际文件存在的不真实性批注（Honest Disclosure）**：在中心管道将某个超时未就绪项目标记为 `scanStatus: failed` 且 `interfaces: null` 后，该项目的 CI 容器可能在稍后时刻完成了 `actual.json` 的单独上传。此时，存储桶中该文件物理存在，而全局拓扑由于构建隔离将其视为不可用。当客户端绕过拓扑、直接通过 `GET /commits/<sha>/route-ast-actual.json` 访问该项目接口时，网关将返回成功。此类不一致由分布式编译的失败隔离边界引起，开发人员必须使用 `lunar doctor` 进行全局状态的一致性诊断。
+    *   **构建失败隔离与实际文件存在的不真实性批注（Honest Disclosure）**：在中心管道将某个超时未就绪项目标记为 `scanStatus: failed`  且 `interfaces: null` 后，该项目的 CI 容器可能在稍后时刻完成了 `actual.json` 的单独上传。此时，存储桶中该文件物理存在，而全局拓扑由于构建隔离将其视为不可用。当客户端绕过拓扑、直接通过 `GET /commits/<sha>/route-ast-actual.json` 访问该项目接口时，网关将返回成功。此类不一致由分布式编译的失败隔离边界引起，开发人员必须使用 `lunar doctor` 进行全局状态的一致性诊断。
 
 ### 3.2 零摩擦源码投影与降级寻路规范（Zero-Friction Source Code Projection）
 
@@ -114,15 +114,37 @@
 3.  **大小写自适应归一化（Case-Insensitive Normalisation）**：
     在匹配 GitHub 网络坐标 `{owner}/{repo}/{branch}` 时，网关与服务层必须在内存中强制进行小写归一化（Lowercase Normalisation）哈希映射，彻底消除跨平台大小写命名差异导致的分发断层 [1.2]。
 
+### 3.3 去中心化 AI 任务协同看板与密码学防伪校验规范（Decorrelated AI Handover Scratchpad）
+
+为了在无状态、零信任的公网分发环境下，允许外部 AI 代理自主、增量地协助人类完善 `interfaces.yml` 契约，系统确立“去中心化 AI 任务协同看板”规范：
+
+1. **状态事实载体（ai-todo.json）**：
+   项目当前正在执行的 AI 开发进度及待合并补丁，统一持久化于本地项目隐藏目录 `.lunar/ai-todo.json` 下。该文件仅保留当前正处于 `pending` 状态的活跃任务，已合并的任务将在合并瞬间被物理擦除并剪枝，确保文件永远保持极小体积以节省 AI 传输 Token。
+2. **Ed25519 任务指纹防伪（Cryptographic Verification）**：
+   外部 AI 代理在向本端 `POST /api/v1/projects/:name/todo` 提交看板建议或 YAML 契约补丁时，必须强制使用其持有的 AI 私钥，对 `patch` 负载执行 **Ed25519 密码学数字签名**。
+   本地 `lunar` 客户端在执行 `lunar pull` 一键拉取时，强制在本地加载对应项目的公钥对该签名进行数学验签。
+   *   **安全防御边界**：任何未带签名、签名已过期、或与注册指纹不匹配的看板提交，本地 CLI 拒绝合并并强力熔断，彻底阻断公网接口恶意对齐注入与后门投毒风险。
+3. **宏观里程碑结晶化折叠展示（Crystallized Milestone Rendering）**：
+   在渲染 `/tree` 路由的 Markdown 数据时，`lunar-serve` 执行“微观剪枝，宏观结晶”规则。
+   *   对于已完成的里程碑（Milestones），网关不展开任何已完成的微观子任务，仅以单行已完成勋章化状态标记渲染，为 AI 提供 100% 的宏观地标视野（Directional Context）而保持 0% 的微观 Token 噪声。
+
 ---
 
 ## 4. 数据生成层与编译流水线 (lunar)
 
-### 4.1 阶段一：判断 (Detect & Extract) —— 进程隔离、适配器路径覆盖与原子性保证
-*   **适配器发现与覆盖机制**：
+### 4.1 阶段一：判断 —— 基础多语言自适应探测与降级事实生成
+*   **基础多语言自适应探测与降级事实生成（Base Multi-Language Sniffer & Fallback Fact Generation）**：
+    当 `lunar scan` 启动时，如果项目根目录下没有 `Cargo.toml`（非 Rust 项目），控制层会执行词法嗅探，检查是否存在：
+    *   `requirements.txt` / `pyproject.toml` / `Pipfile` $\rightarrow$ 判定为主语言：`Python`
+    *   `go.mod` $\rightarrow$ 判定为主语言：`Go`
+    *   `package.json` $\rightarrow$ 判定为主语言：`Node.js`
+    *   `nginx.conf` $\rightarrow$ 判定为主语言：`Nginx`
+    若对应主语言的编译期 AST 提取器（如 `lunar-extract-python`）尚未安装在系统 PATH 中，控制层绝对不执行阻断性报错，而是自动启动**“声明式降级事实生成器”**，在本地 `.lunar/` 自动写入一个合法的空物理事实文件 `.interfaces-autogen.json`，并将 `projectType` 标记为对应语言。
+    *   **架构收益**：该设计消灭了词法提取器缺失带来的生命期中断。它允许异构的多语言项目（如 Python、Go、Nginx）无障碍接入，通过本地人肉或 AI 维护的 `interfaces.yml` 意图覆盖层，零开销、100% 确定性地将非 Rust 微服务并入到 `lunar-scope` 拓扑画布中。
+*   **适配器路径覆盖机制**：
     `lunar` 控制层默认通过系统环境变量 `PATH` 动态检索命名匹配为 `lunar-extract-<lang>` 的可执行二进制。用户可通过在 `.lunar/config.yml` 中显式指定 `adapters` 路径进行绝对路径覆盖，其优先级高于 `PATH` 自动发现。
 *   **行分隔 JSON 通信（JSON Lines）与原子性结束标记**：
-    Orchestrator 启动适配器子进程。为了防御大型项目下的堆溢出，适配器必须采用流式输出（Line-by-line Flushing） [3]. 适配器每提取一条路由，立即将其写入 `stdout` 并执行 `flush`，严禁在内存中累积整个数据集再进行全量序列化 [3]。
+    Orchestrator 启动适配器子进程。为了防御大型项目下的堆溢出，适配器必须采用流式输出（Line-by-line Flushing） [3]。适配器每提取一条路由，立即将其写入 `stdout` 并执行 `flush`，严禁在内存中累积整个数据集再进行全量序列化 [3]。
     *   **输出流原子性与计数校验（End-of-Stream Marker）**：为了防止适配器执行中途崩溃（Crash）导致控制层误接收不完整、发生破损的接口列表，**适配器必须在所有路由提取成功后，在最后一行输出一条特殊的结束标记行**：
         `{"_lunar": {"status": "success", "count": 42}}`
         **Orchestrator 接收到此标记行后，必须强力校验实际接收解析出的路由总数是否等于 `count`。若不一致（暗示数据发生截断或丢失），Orchestrator 丢弃所有行并直接触发 `ERR_LUNAR_ADAPTER_CRASH`。** 所有的调试与警告日志一律重定向输出至 `stderr`，严禁污染 `stdout` [1.2.1]。
@@ -316,7 +338,7 @@ consumed:
 LunarAST 保持高度的无状态与数据主权。任何外部执行沙箱（如 IDE 插件、AI Agent）在集成时，均必须遵循 **“桥接器隔离模式”** [2]：
 
 *   **桥接器职责**：第三方集成方必须编写独立的桥接程序（如 `routeast-mcp-bridge`），通过标准 HTTP `GET` 接口拉取 `lunar-map.json`，并由桥接器在其内部转化为特定协议。
-*   **不越权交互规范**：桥接器在将 AI 生成的对齐建议写入本地时，**严禁静默修改 `interfaces.yml`**。桥接器只负责在终端生成并输出 Git-diff 格式的对齐补丁片段，并提示用户手动运行本地的 `lunar sync --apply`。
+*   **不越权交互规范**：桥接器在将 AI 生成的对齐建议写入本地时，**严禁静默修改 `interfaces.yml`**。桥接器只负责在终端生成并输出 Git-diff 格式 of 对齐补丁片段，并提示用户手动运行本地的 `lunar sync --apply` [7]。
 
 ```rust
 // 桥接器与 LunarAST 之间的最小交互契约
@@ -444,7 +466,7 @@ $$\text{MethodMismatch} > \text{Orphaned} > \text{Unused} > \text{ParamNameMisma
     为了避免因为生态中某些项目扫描失败（`scanStatus: failed`）或因 CI 构建不协调导致数据陈旧（`scanStatus: stale`）产生数据缺失，进而引发大规模虚假的对齐状态异常（如消费者被误判定为 `Orphaned`，生产者被误判定为 `Unused`）：
     1.  **对齐隔离提取**：对齐引擎必须在计算前检索 `projects` 数组中的 `scanStatus` [2]。
     2.  **`stale` 节点处理**：处于 `stale` 状态的项目所包含的 `exposed` 与 `consumed` 数据**仍会被对齐引擎读取并参与比对计算**。但其产生的所有最终对齐结果，**其 `status` 均被强制标注为 `"unverified"`** [2]。
-    3.  **`failed` 节点处理**：由于 `failed` 项目无法拉取到有效的 `interfaces` 定义（为 `null`），无法进行任何实际比对。**对齐引擎必须遍历当前世代拓扑中所有其余健康项目。只要探测到有健康项目发起了对该 `failed` 服务的接口消费（`consumed`），对齐引擎不对其进行常规的 MethodMismatch 或 Orphaned 检查，而是为其直接生成一条 `status: "unverified"` 的对齐条目**。同时，由于 `failed` 项目无有效接口数据（其 `interfaces` 字段为 `null`），其自身暴露（Exposed）的接口不会在 `alignments` 数组中产生任何对齐条目，因此不会被错误地判定为 `Unused`。
+    3.  **`failed` 节点处理**：由于 `failed` 项目无法拉取到有效的 `interfaces` 定义（为 `null`），无法进行任何实际比对。**对齐引擎必须遍历当前世代拓扑中所有其余健康项目。只要探测到有健康项目发起了对该 `failed` 服务的接口消费（`consumed`），对齐引擎不对其进行常规的 MethodMismatch 或 Orphaned 检查，而是为其直接生成一条 `status: "unverified"` 的对齐条目**。同时，由于 `failed` 项目无有效接口数据（其 `interfaces` 字段为 `null`），其自身暴露（Exposed）的接口不会在 `alignments` 数组中产生任何对齐条目，因此不会地被错误地判定为 `Unused`。
     4.  **未校验契约语义**：被标记为 `unverified` 的条目（优先级 5），在 `lunar-scope` 呈现时予以模糊黄线警示，在数据流和门禁审计中不判定为契约异常，仅代表数据源过时或未就绪。
 *   **诊断判定原则（按严重级别单向短路）**：
     1.  **MethodMismatch（优先级 1）**：只要路径结构完全一致，但客户端使用了 `POST`，服务端仅暴露了 `GET`。对齐引擎立即抛出 MethodMismatch 并停止后续检查。
@@ -546,4 +568,3 @@ lunar sync --dry-run           # 预览对齐变更的同步路径
 lunar sync --apply             # 在自动物理备份旧文件后，将实际代码变更合并写入
 lunar doctor                   # 校验项目 S3 连通性、最新指针状态与拓扑一致性
 lunar cleanup --all            # 交互式引导清除当前项目的所有 S3/R2 数据（删除 commits/ 和 pointers/ 下该项目的所有对象，不影响 ecosystem-config/ 中的全局配置）。若需跳过交互，可追加 `--yes` 标志（风险高，需谨慎操作）
-```
